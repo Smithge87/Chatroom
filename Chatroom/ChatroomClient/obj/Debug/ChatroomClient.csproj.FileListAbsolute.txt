@@ -1,0 +1,6 @@
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\obj\Debug\ChatroomClient.csprojResolveAssemblyReference.cache
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\bin\Debug\ChatroomClient.exe.config
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\bin\Debug\ChatroomClient.exe
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\bin\Debug\ChatroomClient.pdb
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\obj\Debug\ChatroomClient.exe
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomClient\obj\Debug\ChatroomClient.pdb

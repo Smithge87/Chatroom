@@ -1,0 +1,6 @@
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\bin\Debug\ChatroomServer.exe.config
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\bin\Debug\ChatroomServer.exe
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\bin\Debug\ChatroomServer.pdb
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\obj\Debug\ChatroomServer.exe
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\obj\Debug\ChatroomServer.pdb
+C:\Users\Jack\Desktop\Projects\Chatroom\Chatroom\ChatroomServer\ChatroomServer\obj\Debug\ChatroomServer.csprojResolveAssemblyReference.cache
