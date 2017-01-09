@@ -18,9 +18,6 @@ namespace ChatroomServer
         string chat = null;
         Stream clientInput;
         string nameTag = "!@#$%";
-        int queueCount = 0;
-
-
 
         public void StartServer()
         {
@@ -42,10 +39,12 @@ namespace ChatroomServer
         }
         public void ListenForClients()
         {
-            TcpClient client = serverSocket.AcceptTcpClient();
-            NetworkStream stream = client.GetStream();
-            Console.WriteLine("New Connection accepted. Awaiting client ID...");
-            serverData.serverDictionary.Add(client, stream);
+            {
+                TcpClient client = serverSocket.AcceptTcpClient();
+                NetworkStream stream = client.GetStream();
+                Console.WriteLine("New Connection accepted. Awaiting client ID...");
+                serverData.serverDictionary.Add(client, stream);
+            }
         }
         public string ConvertStreamToChat()
         {
@@ -74,29 +73,29 @@ namespace ChatroomServer
             {
                 string clientName = chats.Remove(0,5);
                 Console.WriteLine("Recieved client ID:"+ clientName);
-                serverData.serverDictionary.Remove(client);
                 serverData.clientNames.Add(clientName);
                 chat = clientName + " entered the chat";
                 serverData.chatQueue.Enqueue(chat);
-                queueCount++;
             }
             else if (chats != null)
             {
                 Console.WriteLine("Received: {0}", chat);
                 serverData.chatQueue.Enqueue(chat);
-                queueCount++;           
+                serverData.chatHistory.Enqueue(chat);
             }
         }
         public void SendChat()
         {
-            while (queueCount > 0)
+            while (serverData.chatQueue.Count > 0)
             {
-                string queue = serverData.chatQueue.Peek();
-                Console.WriteLine("Sent: {0}", queue);
-                queueCount--;
-                ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] ba = asen.GetBytes(chat);
-                clientInput.Write(ba, 0, ba.Length);
+                string queue = serverData.chatQueue.Dequeue();
+                foreach (var clients in serverData.serverDictionary)
+                {
+                    Console.WriteLine("Sent: {0}", queue);
+                    ASCIIEncoding asen = new ASCIIEncoding();
+                    byte[] ba = asen.GetBytes(queue);
+                    clients.Value.Write(ba, 0, ba.Length);
+                }
             }
             chat = null;
         }
@@ -104,6 +103,7 @@ namespace ChatroomServer
         {
             while (true)
             {
+                Task.Run(() => ListenForClients());
                 chat = ConvertStreamToChat();
                 QueueChat(chat);
                 SendChat();
@@ -122,7 +122,6 @@ namespace ChatroomServer
         }
         public void RunChatroom()
         {
-            Task.Run(() => ListenForClients());
             Task.Run(() => ListenToClients());
             RunChat();
         }

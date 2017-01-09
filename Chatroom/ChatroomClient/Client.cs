@@ -41,7 +41,7 @@ namespace ChatroomClient
         {
             {
                 Console.Write(clientName + ":> ");
-                string message = Console.ReadLine();
+                string message = clientName + ":> " + Console.ReadLine();
                 ASCIIEncoding asen = new ASCIIEncoding();
                 byte[] ba = asen.GetBytes(message);
                 stream.Write(ba, 0, ba.Length);
