@@ -16,7 +16,6 @@ namespace ChatroomServer
         TcpClient client;
         byte[] bytes = new byte[256];
         string chat = null;
-        int i;
         Stream clientInput;
         string nameTag = "!@#$%";
         int queueCount = 0;
@@ -32,7 +31,7 @@ namespace ChatroomServer
         }
         public TcpListener CreateServerSocket()
         {
-            IPAddress serverIp = IPAddress.Parse("10.134.134.115");
+            IPAddress serverIp = IPAddress.Parse("192.168.0.146");
             TcpListener serverSocket = new TcpListener(serverIp, 1234);
             return serverSocket;
         }
@@ -44,12 +43,9 @@ namespace ChatroomServer
         public void ListenForClients()
         {
             TcpClient client = serverSocket.AcceptTcpClient();
-            Console.WriteLine("Connection accepted from " + client.ExclusiveAddressUse);
-            serverData.serverDictionary.Add(client, "");
-        }
-        public void CreateClient(TcpClient client)
-        {
-            serverData.client.Add(client);
+            NetworkStream stream = client.GetStream();
+            Console.WriteLine("New Connection accepted. Awaiting client ID...");
+            serverData.serverDictionary.Add(client, stream);
         }
         public string ConvertStreamToChat()
         {
@@ -69,7 +65,6 @@ namespace ChatroomServer
                     cleaned[i] = bytes[i];
                 }
                 chat = Encoding.ASCII.GetString(cleaned);
-                //stream = null;
             }
             return chat;
         }
@@ -77,10 +72,10 @@ namespace ChatroomServer
         {
             if (chats != null && chats.Contains(nameTag))
             {
-                string clientName = chats.Remove(1,5);
+                string clientName = chats.Remove(0,5);
                 Console.WriteLine("Recieved client ID:"+ clientName);
                 serverData.serverDictionary.Remove(client);
-                serverData.serverDictionary.Add(client, clientName);
+                serverData.clientNames.Add(clientName);
                 chat = clientName + " entered the chat";
                 serverData.chatQueue.Enqueue(chat);
                 queueCount++;
@@ -116,12 +111,12 @@ namespace ChatroomServer
         }
         public void ListenToClients()
         {
-            foreach (TcpClient goop in serverData.serverDictionary.Keys)
+            foreach (TcpClient currentTalker in serverData.serverDictionary.Keys)
             {
-                if (goop.GetStream() != null)
+                if (currentTalker.GetStream() != null)
                 {
-                    clientInput = goop.GetStream();
-                    client = goop;
+                    clientInput = currentTalker.GetStream();
+                    client = currentTalker;
                 }
             }
         }
