@@ -25,18 +25,18 @@ namespace ChatroomServer
             StartServerSocket(serverSocket);
             ListenForClients();
         }
-        public TcpListener CreateServerSocket()
+        private TcpListener CreateServerSocket()
         {
             IPAddress serverIp = IPAddress.Parse("192.168.0.146");
             TcpListener serverSocket = new TcpListener(serverIp, 1234);
             return serverSocket;
         }
-        public void StartServerSocket(TcpListener serverSocket)
+        private void StartServerSocket(TcpListener serverSocket)
         {
             serverSocket.Start();
             Console.WriteLine("\n\nThe server's Ip Address and port are :" + serverSocket.LocalEndpoint);
         }
-        public void ListenForClients()
+        private void ListenForClients()
         { 
             while (true)
             {
@@ -47,7 +47,28 @@ namespace ChatroomServer
                 Task.Run(() => ListenToClient(client, stream));
             }
         }
-        public string ConvertStreamToString()
+        private void ListenToClient(TcpClient client, NetworkStream stream)
+        {
+            while (serverData.clientSockets[client].CanRead)
+            {
+                if (stream.DataAvailable == true)
+                {
+                    clientInput = client.GetStream();
+                    senderId = client;
+                }
+                RunChat();
+            }
+        }
+        private void RunChat()
+        {
+            lock (sendLock)
+            {
+                chat = ConvertStreamToString();
+                QueueChat(chat);
+                SendChat();
+            }
+        }
+        private string ConvertStreamToString()
         {
             if (clientInput != null)
             {
@@ -69,7 +90,7 @@ namespace ChatroomServer
             clientInput = null;
             return chat;
         }
-        public void QueueChat(string chats)
+        private void QueueChat(string chats)
         {
             if (chats != "" && chats.Contains(nameTag))
             {
@@ -85,16 +106,16 @@ namespace ChatroomServer
                 senderId.Close();
                 serverData.clientSockets[senderId].Close();
                 serverData.chatQueue.Enqueue(chat);
-                serverData.chatHistory.Enqueue(chat);
+                serverData.chatLog.Enqueue(chat);
             }
             else if (chats != "")
             {
                 Console.WriteLine("Received: {0}", chat);
                 serverData.chatQueue.Enqueue(chat);
-                serverData.chatHistory.Enqueue(chat);
+                serverData.chatLog.Enqueue(chat);
             }
         }
-        public void SendChat()
+        private void SendChat()
         {
                 while (serverData.chatQueue.Count > 0)
                 {
@@ -109,27 +130,6 @@ namespace ChatroomServer
                     }
                     chat = "";
                 }
-            }
-        }
-        public void RunChat()
-        {
-            lock (sendLock)
-            {
-                chat = ConvertStreamToString();
-                QueueChat(chat);
-                SendChat();
-            }
-        }
-        public void ListenToClient(TcpClient client, NetworkStream stream)
-        {
-            while (serverData.clientSockets[client].CanRead)
-            {
-                if (stream.DataAvailable == true)
-                {
-                    clientInput = client.GetStream();
-                    senderId = client;
-                }
-                RunChat();
             }
         }
     }
