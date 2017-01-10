@@ -12,15 +12,13 @@ namespace ChatroomServer
     public class Server
     {
         ServerData serverData = new ServerData();
+        ASCIIEncoding encoder = new ASCIIEncoding();
         TcpListener serverSocket;
         TcpClient senderId;
-        byte[] bytes = new byte[256];
-        string chat = "";
         NetworkStream clientInput;
+        string chat = "";
         string nameTag = "!@#$%";
         private Object sendLock = new Object();
-
-
         public void StartServer()
         {
             serverSocket = CreateServerSocket();
@@ -39,7 +37,7 @@ namespace ChatroomServer
             Console.WriteLine("\n\nThe server's Ip Address and port are :" + serverSocket.LocalEndpoint);
         }
         public void ListenForClients()
-        {
+        { 
             while (true)
             {
                 TcpClient client = serverSocket.AcceptTcpClient();
@@ -49,22 +47,22 @@ namespace ChatroomServer
                 Task.Run(() => ListenToClient(client, stream));
             }
         }
-        public string ConvertStreamToChat()
+        public string ConvertStreamToString()
         {
             if (clientInput != null)
             {
                 int j = 0;
-                byte[] bytes = new byte[500];
-                clientInput.Read(bytes, 0, bytes.Length);
+                byte[] messageBuffer = new byte[500];
+                clientInput.Read(messageBuffer, 0, messageBuffer.Length);
                 for (int i = 0; i < 500; i++)
-                    if (bytes[i] != 0)
+                    if (messageBuffer[i] != 0)
                     {
                         j++;
                     }
                 byte[] cleaned = new byte[j];
                 for (int i = 0; i < j; i++)
                 {
-                    cleaned[i] = bytes[i];
+                    cleaned[i] = messageBuffer[i];
                 }
                 chat = Encoding.ASCII.GetString(cleaned);
             }
@@ -80,6 +78,14 @@ namespace ChatroomServer
                 serverData.clientIds.Add(senderId ,clientName);
                 chat = clientName + " entered the chat";
                 serverData.chatQueue.Enqueue(chat);
+            }
+            else if (chats != "" && chats.Remove(0,(serverData.clientIds[senderId]).Length+3) == "exit")
+            {
+                chat = serverData.clientIds[senderId] + " has left the chatroom";
+                senderId.Close();
+                serverData.clientSockets[senderId].Close();
+                serverData.chatQueue.Enqueue(chat);
+                serverData.chatHistory.Enqueue(chat);
             }
             else if (chats != "")
             {
@@ -98,9 +104,8 @@ namespace ChatroomServer
                     if (clients.Key != senderId)
                     {
                         Console.WriteLine("Sent: {0}", queue);
-                        ASCIIEncoding asen = new ASCIIEncoding();
-                        byte[] ba = asen.GetBytes(queue);
-                        clients.Value.Write(ba, 0, ba.Length);
+                        byte[] outgoingMessage = encoder.GetBytes(queue);
+                        clients.Value.Write(outgoingMessage, 0, outgoingMessage.Length);
                     }
                     chat = "";
                 }
@@ -110,25 +115,19 @@ namespace ChatroomServer
         {
             lock (sendLock)
             {
-                chat = ConvertStreamToChat();
+                chat = ConvertStreamToString();
                 QueueChat(chat);
                 SendChat();
             }
         }
         public void ListenToClient(TcpClient client, NetworkStream stream)
         {
-            while (true)
+            while (serverData.clientSockets[client].CanRead)
             {
                 if (stream.DataAvailable == true)
                 {
                     clientInput = client.GetStream();
                     senderId = client;
-                }
-                else if(stream == null)
-                {
-                    serverData.clientSockets.Remove(client);
-                    var user = serverData.clientIds[client];
-                    Console.WriteLine("{0} has left the chatroom", user);
                 }
                 RunChat();
             }
