@@ -13,18 +13,19 @@ namespace ChatroomServer
     {
         ServerData serverData = new ServerData();
         TcpListener serverSocket;
-        TcpClient client;
+        TcpClient senderId;
         byte[] bytes = new byte[256];
-        string chat = null;
-        Stream clientInput;
+        string chat = "";
+        NetworkStream clientInput;
         string nameTag = "!@#$%";
+        private Object sendLock = new Object();
+
 
         public void StartServer()
         {
             serverSocket = CreateServerSocket();
             StartServerSocket(serverSocket);
             ListenForClients();
-            RunChatroom();
         }
         public TcpListener CreateServerSocket()
         {
@@ -39,11 +40,13 @@ namespace ChatroomServer
         }
         public void ListenForClients()
         {
+            while (true)
             {
                 TcpClient client = serverSocket.AcceptTcpClient();
                 NetworkStream stream = client.GetStream();
                 Console.WriteLine("New Connection accepted. Awaiting client ID...");
-                serverData.serverDictionary.Add(client, stream);
+                serverData.clientSockets.Add(client, stream);
+                Task.Run(() => ListenToClient(client, stream));
             }
         }
         public string ConvertStreamToChat()
@@ -65,19 +68,20 @@ namespace ChatroomServer
                 }
                 chat = Encoding.ASCII.GetString(cleaned);
             }
+            clientInput = null;
             return chat;
         }
         public void QueueChat(string chats)
         {
-            if (chats != null && chats.Contains(nameTag))
+            if (chats != "" && chats.Contains(nameTag))
             {
-                string clientName = chats.Remove(0,5);
-                Console.WriteLine("Recieved client ID:"+ clientName);
-                serverData.clientNames.Add(clientName);
+                string clientName = chats.Remove(0, 5);
+                Console.WriteLine("Recieved client ID:" + clientName);
+                serverData.clientIds.Add(senderId ,clientName);
                 chat = clientName + " entered the chat";
                 serverData.chatQueue.Enqueue(chat);
             }
-            else if (chats != null)
+            else if (chats != "")
             {
                 Console.WriteLine("Received: {0}", chat);
                 serverData.chatQueue.Enqueue(chat);
@@ -86,44 +90,48 @@ namespace ChatroomServer
         }
         public void SendChat()
         {
-            while (serverData.chatQueue.Count > 0)
-            {
-                string queue = serverData.chatQueue.Dequeue();
-                foreach (var clients in serverData.serverDictionary)
+                while (serverData.chatQueue.Count > 0)
                 {
-                    Console.WriteLine("Sent: {0}", queue);
-                    ASCIIEncoding asen = new ASCIIEncoding();
-                    byte[] ba = asen.GetBytes(queue);
-                    clients.Value.Write(ba, 0, ba.Length);
+                    string queue = serverData.chatQueue.Dequeue();
+                foreach (var clients in serverData.clientSockets)
+                {
+                    if (clients.Key != senderId)
+                    {
+                        Console.WriteLine("Sent: {0}", queue);
+                        ASCIIEncoding asen = new ASCIIEncoding();
+                        byte[] ba = asen.GetBytes(queue);
+                        clients.Value.Write(ba, 0, ba.Length);
+                    }
+                    chat = "";
                 }
             }
-            chat = null;
         }
         public void RunChat()
         {
-            while (true)
+            lock (sendLock)
             {
-                Task.Run(() => ListenForClients());
                 chat = ConvertStreamToChat();
                 QueueChat(chat);
                 SendChat();
             }
         }
-        public void ListenToClients()
+        public void ListenToClient(TcpClient client, NetworkStream stream)
         {
-            foreach (TcpClient currentTalker in serverData.serverDictionary.Keys)
+            while (true)
             {
-                if (currentTalker.GetStream() != null)
+                if (stream.DataAvailable == true)
                 {
-                    clientInput = currentTalker.GetStream();
-                    client = currentTalker;
+                    clientInput = client.GetStream();
+                    senderId = client;
                 }
+                else if(stream == null)
+                {
+                    serverData.clientSockets.Remove(client);
+                    var user = serverData.clientIds[client];
+                    Console.WriteLine("{0} has left the chatroom", user);
+                }
+                RunChat();
             }
-        }
-        public void RunChatroom()
-        {
-            Task.Run(() => ListenToClients());
-            RunChat();
         }
     }
 }

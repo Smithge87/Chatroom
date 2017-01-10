@@ -14,10 +14,11 @@ namespace ChatroomClient
         TcpClient client;
         NetworkStream stream;
         string clientName;
+        string textPrompt;
         public void StartClient()
         {
             stream = CreateConnection();
-            SetId(client);
+            clientName = SetId(client);
             RunChat();
         }
         public NetworkStream CreateConnection()
@@ -28,42 +29,59 @@ namespace ChatroomClient
             NetworkStream stream = client.GetStream();
             return stream;
         }
-        public void SetId(TcpClient clientSocket)
+        public string SetId(TcpClient clientSocket)
         {
             Console.WriteLine("\nPlease enter your name:\n");
             clientName = Console.ReadLine();
-
+            textPrompt = (clientName + ":> ");
             ASCIIEncoding asen = new ASCIIEncoding();
             byte[] ba = asen.GetBytes("!@#$%" + clientName);
             stream.Write(ba, 0, ba.Length);
+            return clientName;
         }
         public void SendChat()
         {
-            {
-                Console.Write(clientName + ":> ");
-                string message = clientName + ":> " + Console.ReadLine();
-                ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] ba = asen.GetBytes(message);
-                stream.Write(ba, 0, ba.Length);
-            }
+            Console.Write(textPrompt);
+            string message = textPrompt + Console.ReadLine();
+            ASCIIEncoding asen = new ASCIIEncoding();
+            byte[] ba = asen.GetBytes(message);
+            stream.Write(ba, 0, ba.Length);
         }
         public void GetChat()
         {
+            while (true)
+            {
                 byte[] bb = new byte[100];
                 int k = stream.Read(bb, 0, 100);
-            for (int i = 0; i < k; i++)
-            {
-                Console.Write(Convert.ToChar(bb[i]));
+                AdjustCursorBeforeText();
+                for (int i = 0; i < k; i++)
+                {
+                    Console.Write(Convert.ToChar(bb[i]));
+                }
+                AdjustCursorAfterText();
             }
-            Console.Write("\n");
         }
         public void RunChat()
         {
+            Task.Run(() => GetChat());
             while (true)
             {
-                GetChat();
                 SendChat();
             }
         }
+        public static void AdjustCursorBeforeText()
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
+            int currentLineCursor = Console.CursorTop;
+            Console.Write(new string(' ', Console.WindowWidth));
+            Console.SetCursorPosition(0, currentLineCursor);
+        }
+        public void AdjustCursorAfterText()
+        {
+            Console.Write("\n");
+            Console.WriteLine(textPrompt);
+            Console.SetCursorPosition(textPrompt.Length, Console.CursorTop - 1);
+        }
+
     }
 }

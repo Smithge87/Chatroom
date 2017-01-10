@@ -9,7 +9,8 @@ namespace ChatroomServer
 {
     class ServerData
     {
-        public Dictionary<TcpClient, NetworkStream> serverDictionary = new Dictionary<TcpClient,NetworkStream>();
+        public Dictionary<TcpClient, NetworkStream> clientSockets = new Dictionary<TcpClient,NetworkStream>();
+        public Dictionary<TcpClient, string> clientIds = new Dictionary<TcpClient, string>();
         public Queue<string> chatQueue = new Queue<string>();
         public Queue<string> chatHistory = new Queue<string>();
         public List<string> clientNames = new List<string>();
