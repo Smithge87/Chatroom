@@ -13,5 +13,6 @@ namespace ChatroomServer
         public Dictionary<TcpClient, string> clientIds = new Dictionary<TcpClient, string>();
         public Queue<string> chatQueue = new Queue<string>();
         public Queue<string> chatLog = new Queue<string>();
+        public List<string> clientNames = new List<string>();
     }
 }

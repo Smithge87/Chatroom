@@ -12,13 +12,20 @@ namespace ChatroomServer
     public class Server
     {
         ServerData serverData = new ServerData();
-        ASCIIEncoding encoder = new ASCIIEncoding();
+        ChatProcessor processor;
+        ASCIIEncoding encoder;
+        public Server()
+        {
+            processor = new ChatProcessor(serverData);
+            encoder = new ASCIIEncoding();
+        }
         TcpListener serverSocket;
         TcpClient senderId;
         NetworkStream clientInput;
         string chat = "";
         string nameTag = "!@#$%";
         private Object sendLock = new Object();
+    
         public void StartServer()
         {
             serverSocket = CreateServerSocket();
@@ -94,25 +101,36 @@ namespace ChatroomServer
         {
             if (chats != "" && chats.Contains(nameTag))
             {
-                string clientName = chats.Remove(0, 5);
-                Console.WriteLine("Recieved client ID:" + clientName);
-                serverData.clientIds.Add(senderId ,clientName);
-                chat = clientName + " entered the chat";
+                string clientName = processor.ProcessName(chats, senderId);
+                chat = clientName;
                 serverData.chatQueue.Enqueue(chat);
             }
-            else if (chats != "" && chats.Remove(0,(serverData.clientIds[senderId]).Length+3) == "exit")
+            else if (chats != "" && chats.Remove(0,(serverData.clientIds[senderId]).Length+3) == "chatroom: exit")
             {
-                chat = serverData.clientIds[senderId] + " has left the chatroom";
-                senderId.Close();
-                serverData.clientSockets[senderId].Close();
-                serverData.chatQueue.Enqueue(chat);
-                serverData.chatLog.Enqueue(chat);
+                chat = processor.ProcessExit(senderId);
             }
+            else if (chats != "" && chats.Remove(0, (serverData.clientIds[senderId]).Length + 3) == "chatroom: show clients")
+            {
+                processor.ProcessClientList(senderId);
+                chat = "";
+            }
+            else if (chats != "" && chats.Remove(0, (serverData.clientIds[senderId]).Length + 3) == "chatroom: keywords")
+            {
+                processor.ProcessKeywordMenu(senderId);
+                chat = "";
+            }
+            else if (chats != "" && chats.Remove(0, (serverData.clientIds[senderId]).Length + 3) == "chatroom: add duck")
+            {
+               chat =  processor.ProcessDuck();
+            }
+            //else if (chats != "" && chats.Remove(0, (serverData.clientIds[senderId]).Length + 3) == "chatroom: change user name")
+            //{
+            //    processor.ProcessNameChange(senderId);
+            //    chat = "";
+            //}
             else if (chats != "")
             {
-                Console.WriteLine("Received: {0}", chat);
-                serverData.chatQueue.Enqueue(chat);
-                serverData.chatLog.Enqueue(chat);
+                chat = processor.ProcessChat(chats);
             }
         }
         private void SendChat()
